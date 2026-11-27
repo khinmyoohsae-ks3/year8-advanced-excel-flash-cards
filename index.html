@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Computing Glossary — Interactive Flashcards (51 Terms)</title>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --surface-alt: #f8fafc;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #dbeafe;
+      --accent: #0d9488;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --known: #16a34a;
+      --known-bg: #dcfce7;
+      --review: #d97706;
+      --review-bg: #fef3c7;
+      --shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      color: #fff;
+      padding: 22px 20px;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .title-group h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+
+    .title-group p {
+      font-size: 0.86rem;
+      opacity: 0.9;
+    }
+
+    .stats-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .stat-pill {
+      background: rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(6px);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+
+    /* Toolbar */
+    .toolbar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    select, input[type="text"], button {
+      padding: 8px 13px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+
+    input[type="text"] {
+      font-weight: 400;
+      min-width: 200px;
+      background: var(--surface-alt);
+    }
+
+    select {
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    button {
+      cursor: pointer;
+      background: var(--surface-alt);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button:hover:not(:disabled) {
+      background: #e2e8f0;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-dark);
+    }
+
+    .btn-accent {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .btn-accent:hover:not(:disabled) {
+      background: #0f766e;
+    }
+
+    .mode-switch {
+      display: flex;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .mode-switch button {
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .mode-switch button.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    /* Single Study Mode (3D Flip Card) */
+    .study-stage {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .flashcard-scene {
+      perspective: 1200px;
+      width: 100%;
+      height: 360px;
+      cursor: pointer;
+      margin-bottom: 18px;
+    }
+
+    @keyframes cardSwapAnim {
+      0% { opacity: 0.25; transform: scale(0.95) translateX(18px); }
+      100% { opacity: 1; transform: scale(1) translateX(0); }
+    }
+
+    .flashcard-scene.swap-anim {
+      animation: cardSwapAnim 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .flashcard-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+
+    .flashcard-inner.is-flipped {
+      transform: rotateY(180deg);
+    }
+
+    .flashcard-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .flashcard-back {
+      transform: rotateY(180deg);
+      background: linear-gradient(145deg, #ffffff, #f8fafc);
+      border: 2px solid var(--primary-light);
+    }
+
+    .card-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-cat {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+    }
+
+    .badge-side {
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+
+    .card-center {
+      text-align: center;
+      margin: auto 0;
+      padding: 12px;
+    }
+
+    .term-title {
+      font-size: clamp(1.5rem, 3vw, 2.2rem);
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .def-text {
+      font-size: clamp(1.05rem, 2vw, 1.25rem);
+      color: #1e293b;
+      font-weight: 500;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .def-text code {
+      background: #eff6ff;
+      color: #1d4ed8;
+      padding: 2px 6px;
+      border-radius: 5px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.92em;
+    }
+
+    .card-hint {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .study-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: var(--surface);
+      padding: 14px 18px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    .status-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-known {
+      background: var(--known-bg);
+      color: #14532d;
+      border-color: #86efac;
+    }
+
+    .btn-known:hover {
+      background: #bbf7d0;
+    }
+
+    .btn-review {
+      background: var(--review-bg);
+      color: #78350f;
+      border-color: #fde68a;
+    }
+
+    .btn-review:hover {
+      background: #fde68a;
+    }
+
+    /* Grid View Mode */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .mini-scene {
+      perspective: 1000px;
+      height: 230px;
+      cursor: pointer;
+    }
+
+    .mini-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.5s ease;
+      transform-style: preserve-3d;
+    }
+
+    .mini-inner.is-flipped {
+      transform: rotateY(180deg);
+    }
+
+    .mini-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .mini-back {
+      transform: rotateY(180deg);
+      background: #f8fafc;
+      border: 1.5px solid var(--primary);
+    }
+
+    .mini-term {
+      font-size: 1.2rem;
+      font-weight: 700;
+      text-align: center;
+      margin: auto 0;
+    }
+
+    .mini-def {
+      font-size: 0.92rem;
+      text-align: center;
+      margin: auto 0;
+      overflow-y: auto;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #cbd5e1;
+      display: inline-block;
+    }
+
+    .status-dot.known { background: var(--known); }
+    .status-dot.review { background: var(--review); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <div class="title-group">
+        <h1>Computing Glossary — 51 Flashcards</h1>
+        <p>Spreadsheets, Python Selection, Computational Thinking &amp; Hardware Terms</p>
+      </div>
+      <div class="stats-bar">
+        <div class="stat-pill" id="stat-mastered">Mastered: 0 / 51</div>
+        <div class="stat-pill" id="stat-review">Needs Review: 0</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="control-group">
+        <input type="text" id="search-input" placeholder="Search term or definition..." />
+
+        <select id="category-filter">
+          <option value="ALL">All Categories (51)</option>
+          <option value="Spreadsheets">Spreadsheets (19)</option>
+          <option value="Python & Coding">Python &amp; Coding (14)</option>
+          <option value="Computational Thinking">Computational Thinking (10)</option>
+          <option value="Hardware & Data">Hardware, Data &amp; Security (8)</option>
+        </select>
+
+        <div class="mode-switch">
+          <button id="btn-mode-study" class="active" onclick="setMode('study')">Study Deck</button>
+          <button id="btn-mode-grid" onclick="setMode('grid')">All Cards Grid</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <button class="btn-primary" onclick="shuffleDeck()" title="Shuffle card order">⇄ Shuffle Deck</button>
+        <button class="btn-accent" onclick="swapFrontBack()" title="Swap whether Term or Definition shows first">🔄 Swap Front/Back</button>
+        <button onclick="resetProgress()" title="Clear mastery progress">↺ Reset</button>
+      </div>
+    </div>
+
+    <!-- Study Deck View -->
+    <div id="study-view" class="study-stage">
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+
+      <div class="flashcard-scene" id="flashcard-scene" onclick="flipCurrentCard()">
+        <div class="flashcard-inner" id="flashcard-inner">
+          <div class="flashcard-face flashcard-front">
+            <div class="card-top-row">
+              <span class="badge-cat" id="front-cat">Category</span>
+              <span class="badge-side" id="front-label">TERM</span>
+            </div>
+            <div class="card-center">
+              <div class="term-title" id="front-content">Term</div>
+            </div>
+            <div class="card-hint">Click card or press <strong>Space</strong> to flip</div>
+          </div>
+
+          <div class="flashcard-face flashcard-back">
+            <div class="card-top-row">
+              <span class="badge-cat" id="back-cat">Category</span>
+              <span class="badge-side" id="back-label">DEFINITION</span>
+            </div>
+            <div class="card-center">
+              <div class="def-text" id="back-content">Definition</div>
+            </div>
+            <div class="card-hint">Click card to flip back</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="study-controls">
+        <button id="prev-btn" onclick="prevCard()">← Prev</button>
+
+        <div class="status-actions">
+          <button class="btn-review" onclick="markCard('review')">★ Needs Review</button>
+          <button class="btn-known" onclick="markCard('known')">✔ Mastered</button>
+        </div>
+
+        <span id="card-counter" style="font-weight:700; font-size:0.9rem;">1 / 51</span>
+
+        <button class="btn-primary" id="next-btn" onclick="nextCard()">Next →</button>
+      </div>
+    </div>
+
+    <!-- Grid View -->
+    <div id="grid-view" class="cards-grid" style="display: none;"></div>
+  </div>
+
+  <script>
+    const RAW_CARDS = [
+      { id: 1, term: "Absolute cell reference", cat: "Spreadsheets", def: "A cell reference that does not change when it is replicated to several columns or rows of data in a spreadsheet, for example, <code>=$A$1+$B$1</code>." },
+      { id: 2, term: "Abstraction", cat: "Computational Thinking", def: "Removing unnecessary and unhelpful detail; one of the four cornerstones of computational thinking." },
+      { id: 3, term: "Action", cat: "Python & Coding", def: "The output or step carried out if the condition in a selection statement is met." },
+      { id: 4, term: "Algorithm", cat: "Computational Thinking", def: "A series of simple, logical, step-by-step instructions that must be followed in a strict sequence." },
+      { id: 5, term: "Algorithm Design", cat: "Computational Thinking", def: "Planning a solution based on your understanding of the problem; one of the four cornerstones of computational thinking." },
+      { id: 6, term: "AND in spreadsheet", cat: "Spreadsheets", def: "A logical operator used inside <code>IF</code> functions to check that more than one condition is True at the same time." },
+      { id: 7, term: "AVERAGE in spreadsheet", cat: "Spreadsheets", def: "A spreadsheet function that calculates the arithmetic mean of the values in a selected range of cells." },
+      { id: 8, term: "Boolean operators", cat: "Python & Coding", def: "Operators used in logical tests to compare values and return True or False: <code>&lt;</code>, <code>&lt;=</code>, <code>!=</code>, <code>==</code>, <code>&gt;</code>, and <code>&gt;=</code>." },
+      { id: 9, term: "Boolean value", cat: "Python & Coding", def: "A data value that can only be either <code>True</code> or <code>False</code>." },
+      { id: 10, term: "Button in spreadsheet", cat: "Spreadsheets", def: "A form control object placed on a spreadsheet to which a recorded macro can be assigned and run when clicked." },
+      { id: 11, term: "Byte", cat: "Hardware & Data", def: "A unit of digital storage consisting of 8 bits (1,000 bytes = 1 kilobyte; 1,000,000 bytes = 1 megabyte)." },
+      { id: 12, term: "Cell range", cat: "Spreadsheets", def: "Two or more cells next to each other in a row or a column, for example, <code>A1:A10</code>." },
+      { id: 13, term: "Cell reference", cat: "Spreadsheets", def: "A unique reference (column letter + row number) used to identify a cell in a spreadsheet; can be relative (<code>=A1+B1</code>) or absolute (<code>=$A$1+$B$1</code>)." },
+      { id: 14, term: "Check box", cat: "Spreadsheets", def: "A type of form control that allows the user to select one or more items from a range of options; also known as a tick box." },
+      { id: 15, term: "Clock speed", cat: "Hardware & Data", def: "How many fetch–decode–execute cycles a CPU can process per second (measured in hertz); often referred to as processor 'speed'." },
+      { id: 16, term: "Computational thinking", cat: "Computational Thinking", def: "A logical, strategic approach to problem-solving involving four cornerstones: decomposition, abstraction, pattern recognition, and algorithm design." },
+      { id: 17, term: "Computer program", cat: "Python & Coding", def: "A set of instructions written in a programming language that a computer follows precisely." },
+      { id: 18, term: "Concatenation in Python", cat: "Python & Coding", def: "Using the <code>+</code> operator to join more than one piece of text/string data together into a single output or print statement." },
+      { id: 19, term: "Condition", cat: "Python & Coding", def: "What the data has to be for an action to be performed; in an <code>if</code> statement, it is a question answered with True or False." },
+      { id: 20, term: "Constant", cat: "Python & Coding", def: "A named value stored by the computer that cannot be changed while the program is running." },
+      { id: 21, term: "CPU", cat: "Hardware & Data", def: "Central Processing Unit — carries out all the processing in a computer by completing the fetch–decode–execute cycle." },
+      { id: 22, term: "Criterion", cat: "Spreadsheets", def: "In a spreadsheet, the condition that determines which cells will be counted or evaluated (such as in a <code>COUNTIF</code> function)." },
+      { id: 23, term: "Decomposition", cat: "Computational Thinking", def: "Breaking down a complex and seemingly impossible problem into smaller, easier-to-solve sub-problems; one of the cornerstones of computational thinking." },
+      { id: 24, term: "Decryption", cat: "Hardware & Data", def: "Unscrambling an encrypted message (ciphertext) back into readable plaintext so that it makes sense again." },
+      { id: 25, term: "Drop-down list", cat: "Spreadsheets", def: "A type of data validation that limits the values that can be entered into a spreadsheet cell to a predefined list." },
+      { id: 26, term: "Elif statement", cat: "Python & Coding", def: "Short for 'else if'; used with <code>if</code> and <code>else</code> statements in Python to check several different conditions in a row." },
+      { id: 27, term: "Else statement", cat: "Python & Coding", def: "Used with <code>if</code> statements to tell a computer program what code to execute if all preceding conditions are False." },
+      { id: 28, term: "Floating point number", cat: "Hardware & Data", def: "A data type consisting of numbers with decimal points (also known as a real number), such as <code>2.3</code>, <code>5.44</code>, and <code>10.9</code>." },
+      { id: 29, term: "Flow diagram", cat: "Computational Thinking", def: "A graphic representation of the flow of data/control through a system using standard shapes to illustrate the sequence of instructions in an algorithm." },
+      { id: 30, term: "Form control", cat: "Spreadsheets", def: "An interactive object (such as a check box or button) placed onto a spreadsheet to help the user interact with data and select items." },
+      { id: 31, term: "Formula", cat: "Spreadsheets", def: "A mathematical calculation in a spreadsheet that uses cell references so the answer automatically recalculates when values change." },
+      { id: 32, term: "Goal Seek", cat: "Spreadsheets", def: "A built-in spreadsheet tool that enables you to ask 'what if' questions by finding the input value needed to achieve a specific target result." },
+      { id: 33, term: "IF in spreadsheet", cat: "Spreadsheets", def: "A spreadsheet function used to make choices by testing a condition and returning one value if True and another if False." },
+      { id: 34, term: "If-else", cat: "Python & Coding", def: "A selection statement that performs one action if the condition is True and a different action if it is False; it never performs both." },
+      { id: 35, term: "If-statement", cat: "Python & Coding", def: "The most common way of implementing selection in a computer program, used to decide what to do next if a condition is True." },
+      { id: 36, term: "Integer", cat: "Hardware & Data", def: "A data type consisting of whole numbers (positive, negative, or zero) without decimal points, such as <code>1</code>, <code>10</code>, and <code>-100</code>." },
+      { id: 37, term: "Linked cell", cat: "Spreadsheets", def: "The cell connected to a spreadsheet check box that returns <code>TRUE</code> when ticked and <code>FALSE</code> when unticked." },
+      { id: 38, term: "Logical operators in Spreadsheet", cat: "Spreadsheets", def: "Operators (<code>AND</code>, <code>OR</code>, and <code>NOT</code>) that return a Boolean value and are used inside <code>IF</code> functions to test multiple conditions." },
+      { id: 39, term: "Logical test", cat: "Python & Coding", def: "Also called a logical expression; a question or comparison whose answer can only be either <code>True</code> or <code>False</code>." },
+      { id: 40, term: "Look up table", cat: "Spreadsheets", def: "A structured table of data arranged in ascending order elsewhere on a spreadsheet that is searched by a <code>VLOOKUP</code> function." },
+      { id: 41, term: "Macro", cat: "Spreadsheets", def: "A small program (saved as Visual Basic code in Excel) that records mouse clicks and keystrokes to automate routine spreadsheet tasks." },
+      { id: 42, term: "Modelling", cat: "Computational Thinking", def: "Using a computer simulation or spreadsheet to represent a real-world system and predict what is likely to happen when variables change." },
+      { id: 43, term: "Pattern recognition", cat: "Computational Thinking", def: "Identifying similarities and repeated patterns in problems or data so existing solutions can be reused; one of the four cornerstones of computational thinking." },
+      { id: 44, term: "Prompt", cat: "Python & Coding", def: "An instruction or question displayed to the user (such as inside <code>input()</code>) that tells them what data to enter." },
+      { id: 45, term: "Real number", cat: "Hardware & Data", def: "Also known as a floating point number; a numeric data type that includes numbers with decimal points (e.g., <code>2.3</code>, <code>10.9</code>)." },
+      { id: 46, term: "REPT in spreadsheet", cat: "Spreadsheets", def: "A spreadsheet function (<code>=REPT(text, number)</code>) used to repeat a string of characters a given number of times." },
+      { id: 47, term: "Selection", cat: "Computational Thinking", def: "One of the three key programming constructs; making a decision in a program by asking a True/False question to determine which steps to follow." },
+      { id: 48, term: "Spreadsheet", cat: "Spreadsheets", def: "Software consisting of a grid of rows and columns of cells used to store, calculate, and model data (e.g., Microsoft Excel, Google Sheets)." },
+      { id: 49, term: "Tick box", cat: "Spreadsheets", def: "Another name for a check box — a form control that lets users select one or more options from a list." },
+      { id: 50, term: "Variable", cat: "Python & Coding", def: "A named storage location in a computer's memory whose value can change while a program is running." },
+      { id: 51, term: "Lookup", cat: "Spreadsheets", def: "Searching for a value in a table of data (such as with <code>VLOOKUP</code>) and returning a corresponding value from an adjacent cell." }
+    ];
+
+    // State
+    let deck = RAW_CARDS.map(c => ({ ...c, status: 'unseen' }));
+    let currentIndex = 0;
+    let isFlipped = false;
+    let termFirst = true;
+    let viewMode = 'study'; // 'study' | 'grid'
+    let searchQuery = '';
+    let selectedCategory = 'ALL';
+
+    function getFilteredDeck() {
+      return deck.filter(card => {
+        const matchesCat = selectedCategory === 'ALL' || card.cat === selectedCategory;
+        const q = searchQuery.toLowerCase();
+        const matchesSearch = card.term.toLowerCase().includes(q) || card.def.toLowerCase().includes(q);
+        return matchesCat && matchesSearch;
+      });
+    }
+
+    function updateStats() {
+      const mastered = deck.filter(c => c.status === 'known').length;
+      const review = deck.filter(c => c.status === 'review').length;
+      document.getElementById('stat-mastered').textContent = `Mastered: ${mastered} / ${deck.length}`;
+      document.getElementById('stat-review').textContent = `Needs Review: ${review}`;
+    }
+
+    function flipCurrentCard() {
+      isFlipped = !isFlipped;
+      document.getElementById('flashcard-inner').classList.toggle('is-flipped', isFlipped);
+    }
+
+    function triggerSwapAnim() {
+      const scene = document.getElementById('flashcard-scene');
+      scene.classList.remove('swap-anim');
+      void scene.offsetWidth; // trigger reflow
+      scene.classList.add('swap-anim');
+    }
+
+    function nextCard() {
+      const filtered = getFilteredDeck();
+      if (currentIndex < filtered.length - 1) {
+        currentIndex++;
+        isFlipped = false;
+        triggerSwapAnim();
+        render();
+      }
+    }
+
+    function prevCard() {
+      if (currentIndex > 0) {
+        currentIndex--;
+        isFlipped = false;
+        triggerSwapAnim();
+        render();
+      }
+    }
+
+    function markCard(status) {
+      const filtered = getFilteredDeck();
+      if (!filtered.length) return;
+      const currentCard = filtered[currentIndex];
+      const realCard = deck.find(c => c.id === currentCard.id);
+      if (realCard) realCard.status = status;
+      updateStats();
+      if (currentIndex < filtered.length - 1) {
+        nextCard();
+      } else {
+        render();
+      }
+    }
+
+    function shuffleDeck() {
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+      currentIndex = 0;
+      isFlipped = false;
+      triggerSwapAnim();
+      render();
+    }
+
+    function swapFrontBack() {
+      termFirst = !termFirst;
+      isFlipped = false;
+      triggerSwapAnim();
+      render();
+    }
+
+    function resetProgress() {
+      deck = RAW_CARDS.map(c => ({ ...c, status: 'unseen' }));
+      currentIndex = 0;
+      isFlipped = false;
+      updateStats();
+      render();
+    }
+
+    function setMode(mode) {
+      viewMode = mode;
+      document.getElementById('btn-mode-study').classList.toggle('active', mode === 'study');
+      document.getElementById('btn-mode-grid').classList.toggle('active', mode === 'grid');
+      document.getElementById('study-view').style.display = mode === 'study' ? 'block' : 'none';
+      document.getElementById('grid-view').style.display = mode === 'grid' ? 'grid' : 'none';
+      render();
+    }
+
+    function render() {
+      updateStats();
+      const filtered = getFilteredDeck();
+
+      if (viewMode === 'study') {
+        const inner = document.getElementById('flashcard-inner');
+        inner.classList.toggle('is-flipped', isFlipped);
+
+        if (filtered.length === 0) {
+          document.getElementById('front-cat').textContent = 'No Match';
+          document.getElementById('front-content').innerHTML = 'No flashcards match your filter.';
+          document.getElementById('back-content').innerHTML = 'Try clearing your search or changing the category.';
+          document.getElementById('card-counter').textContent = '0 / 0';
+          document.getElementById('progress-fill').style.width = '0%';
+          return;
+        }
+
+        if (currentIndex >= filtered.length) currentIndex = filtered.length - 1;
+        const card = filtered[currentIndex];
+
+        document.getElementById('front-cat').textContent = card.cat;
+        document.getElementById('back-cat').textContent = card.cat;
+
+        if (termFirst) {
+          document.getElementById('front-label').textContent = 'TERM';
+          document.getElementById('front-content').innerHTML = `<div class="term-title">${card.term}</div>`;
+          document.getElementById('back-label').textContent = 'DEFINITION';
+          document.getElementById('back-content').innerHTML = `<div class="def-text">${card.def}</div>`;
+        } else {
+          document.getElementById('front-label').textContent = 'DEFINITION';
+          document.getElementById('front-content').innerHTML = `<div class="def-text">${card.def}</div>`;
+          document.getElementById('back-label').textContent = 'TERM';
+          document.getElementById('back-content').innerHTML = `<div class="term-title">${card.term}</div>`;
+        }
+
+        document.getElementById('card-counter').textContent = `${currentIndex + 1} / ${filtered.length}`;
+        document.getElementById('prev-btn').disabled = currentIndex === 0;
+        document.getElementById('next-btn').disabled = currentIndex === filtered.length - 1;
+        document.getElementById('progress-fill').style.width = `${((currentIndex + 1) / filtered.length) * 100}%`;
+      } else {
+        const grid = document.getElementById('grid-view');
+        if (filtered.length === 0) {
+          grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--muted);">No matching flashcards found.</div>`;
+          return;
+        }
+
+        grid.innerHTML = filtered.map(card => {
+          const frontHtml = termFirst
+            ? `<div class="mini-term">${card.term}</div>`
+            : `<div class="mini-def">${card.def}</div>`;
+          const backHtml = termFirst
+            ? `<div class="mini-def">${card.def}</div>`
+            : `<div class="mini-term">${card.term}</div>`;
+
+          return `
+            <div class="mini-scene" onclick="this.querySelector('.mini-inner').classList.toggle('is-flipped')">
+              <div class="mini-inner">
+                <div class="mini-face">
+                  <div class="card-top-row">
+                    <span class="badge-cat">${card.cat}</span>
+                    <span class="status-dot ${card.status}" title="Status: ${card.status}"></span>
+                  </div>
+                  ${frontHtml}
+                  <div class="card-hint">Tap to flip</div>
+                </div>
+                <div class="mini-face mini-back">
+                  <div class="card-top-row">
+                    <span class="badge-cat">${card.cat}</span>
+                    <span class="badge-side">${termFirst ? 'Definition' : 'Term'}</span>
+                  </div>
+                  ${backHtml}
+                  <div class="card-hint">Tap to flip back</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // Event Listeners
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      currentIndex = 0;
+      isFlipped = false;
+      render();
+    });
+
+    document.getElementById('category-filter').addEventListener('change', (e) => {
+      selectedCategory = e.target.value;
+      currentIndex = 0;
+      isFlipped = false;
+      render();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (document.activeElement.tagName === 'INPUT') return;
+      if (viewMode === 'study') {
+        if (e.code === 'Space') {
+          e.preventDefault();
+          flipCurrentCard();
+        } else if (e.code === 'ArrowRight') {
+          nextCard();
+        } else if (e.code === 'ArrowLeft') {
+          prevCard();
+        }
+      }
+    });
+
+    // Init
+    render();
+  </script>
+</body>
+</html>
